@@ -1,0 +1,17 @@
+LICENCE D'UTILISATION
+AADL GEST IMMO - Gestion des Ascenseurs
+Version 1.0.0
+
+Copyright (c) 2026 SPA AADL GEST IMMO ANNABA
+Tous droits réservés.
+
+Cette application est propriétaire et confidentielle.
+L'utilisation est strictement réservée au personnel autorisé de la SPA AADL GEST IMMO.
+
+DISTRIBUTION:
+- L'application peut être distribuée uniquement par la SPA AADL GEST IMMO ANNABA
+- Toute redistribution non autorisée est interdite
+
+SUPPORT:
+Direction Régionale: ANNABA
+Programmes 55 000 et 568 000 Logements

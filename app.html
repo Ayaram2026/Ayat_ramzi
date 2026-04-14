@@ -1,0 +1,2536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Ascenseurs - AADL GEST IMMO [PROTÉGÉ]</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Écran de verrouillage */
+        #lockScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .lock-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .lock-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #2a5298;
+        }
+
+        .lock-title {
+            font-size: 1.8em;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .lock-subtitle {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .unlock-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .unlock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 15px;
+            display: none;
+            font-weight: bold;
+        }
+
+        .security-info {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        /* Protection contre la modification */
+        .protected-overlay {
+            display: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: none; /* Caché jusqu'à déverrouillage */
+        }
+
+        .container.unlocked {
+            display: block;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .security-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: #2a5298;
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            color: #2a5298;
+            border-bottom: 3px solid #2a5298;
+            background: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            color: #2a5298;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #868f96 0%, #596164 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.95em;
+        }
+
+        th {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-secondary {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .badge-dark {
+            background: #d6d8d9;
+            color: #1b1e21;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .pv-document {
+            background: white;
+            border: 2px solid #000;
+            padding: 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #000;
+        }
+
+        .pv-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .pv-section {
+            margin-bottom: 25px;
+        }
+
+        .pv-section-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 10px;
+        }
+
+        .pv-field {
+            margin-bottom: 8px;
+        }
+
+        .pv-label {
+            font-weight: bold;
+        }
+
+        .pv-signatures {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pv-signature-box {
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            text-align: center;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .actions-cell {
+            white-space: nowrap;
+        }
+
+        .checkbox-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checkbox-list li {
+            margin-bottom: 8px;
+        }
+
+        .checkbox-list li:before {
+            content: "[ ] ";
+            font-weight: bold;
+        }
+
+        /* Bouton de verrouillage dans l'interface */
+        .lock-app-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none;
+        }
+
+        .lock-app-btn.visible {
+            display: block;
+        }
+
+        .lock-app-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        /* Styles pour l'import Excel */
+        .import-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .import-section h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .import-zone {
+            border: 3px dashed rgba(255,255,255,0.5);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .import-zone:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+
+        .import-zone.dragover {
+            background: rgba(255,255,255,0.3);
+            border-color: #38ef7d;
+        }
+
+        .import-zone i {
+            font-size: 3em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .template-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .template-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .preview-table {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            color: #333;
+        }
+
+        .preview-table table {
+            margin: 0;
+            font-size: 0.85em;
+        }
+
+        .preview-table th {
+            background: #667eea;
+            padding: 10px;
+        }
+
+        .preview-table td {
+            padding: 8px;
+        }
+
+        .import-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .success-row {
+            background: #d4edda !important;
+        }
+
+        .error-row {
+            background: #f8d7da !important;
+        }
+
+        .import-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .import-stat {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .import-stat h4 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Écran de verrouillage -->
+    <div id="lockScreen">
+        <div class="lock-container">
+            <div class="lock-icon">🔒</div>
+            <div class="lock-title">Application Sécurisée</div>
+            <div class="lock-subtitle">Gestion des Ascenseurs - AADL GEST IMMO</div>
+
+            <input type="password"
+                   id="passwordInput"
+                   class="password-input"
+                   placeholder="Entrez le mot de passe"
+                   onkeypress="if(event.key==='Enter')verifierMotDePasse()">
+
+            <button class="unlock-btn" onclick="verifierMotDePasse()">
+                🔓 DÉVERROUILLER
+            </button>
+
+            <div id="errorMessage" class="error-message">
+                ❌ Mot de passe incorrect !
+            </div>
+
+            <div class="security-info">
+                <strong>⚠️ Avertissement de sécurité</strong><br>
+                Cette application est protégée. Toute tentative de modification
+                du code source sans autorisation est strictement interdite.
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton pour verrouiller l'application -->
+    <button class="lock-app-btn" id="lockAppBtn" onclick="verrouillerApplication()">
+        🔒 Verrouiller
+    </button>
+
+    <!-- Contenu principal de l'application -->
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <div class="security-badge">🔒 PROTÉGÉ</div>
+            <h1>🏢 Gestion des Ascenseurs</h1>
+            <p>AADL - Agence Nationale de l'Amélioration et du Développement du Logement</p>
+            <p>Direction Régionale: ANNABA | Programmes 55 000 et 568 000 Logements</p>
+            <p>SPA AADL GEST IMMO ANNABA</p>
+            <img src="aadl2.png" width="151" height="161" alt="">
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">📊 Tableau de Bord</button>
+            <button class="nav-tab" onclick="showTab('batiments')">🏗️ Bâtiments</button>
+            <button class="nav-tab" onclick="showTab('ascenseurs')">🛗 Ascenseurs</button>
+            <button class="nav-tab" onclick="showTab('pannes')">⚠️ Pannes</button>
+            <button class="nav-tab" onclick="showTab('etats')">📋 États & PV</button>
+            <button class="nav-tab" onclick="showTab('export')">💾 Export/Import</button>
+        </div>
+
+        <div class="content">
+            <!-- Tableau de Bord -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsContainer"></div>
+                <div class="card">
+                    <h2 class="card-title">⚡ Alertes Récentes</h2>
+                    <div id="alertesContainer"></div>
+                </div>
+            </div>
+
+            <!-- Gestion des Bâtiments -->
+            <div id="batiments" class="tab-content">
+                <!-- Section Import Excel -->
+                <div class="import-section" id="importSection">
+                    <h3>📥 Importation Excel des Bâtiments</h3>
+                    <p style="margin-bottom: 15px; opacity: 0.9;">
+                        Importez rapidement vos bâtiments depuis un fichier Excel (.xlsx, .xls, .csv)
+                    </p>
+                    
+                    <div class="import-zone" id="dropZone" onclick="document.getElementById('excelFileInput').click()">
+                        <span style="font-size: 3em;">📁</span>
+                        <h4>Glissez-déposez votre fichier Excel ici</h4>
+                        <p>ou cliquez pour sélectionner un fichier</p>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleExcelFile(event)">
+                    </div>
+
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button class="template-btn" onclick="telechargerModeleExcel()">
+                            📋 Télécharger le modèle Excel
+                        </button>
+                    </div>
+
+                    <div id="importPreview" class="hidden" style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px;">📋 Aperçu des données</h4>
+                        <div class="preview-table" id="previewTableContainer"></div>
+                        
+                        <div class="import-stats" id="importStats"></div>
+                        
+                        <div class="import-actions">
+                            <button class="btn btn-success" onclick="confirmerImportation()">
+                                ✅ Confirmer l'importation
+                            </button>
+                            <button class="btn btn-secondary" onclick="annulerImportation()">
+                                ❌ Annuler
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="importResult" class="hidden" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 10px;">
+                        <h4>✅ Importation réussie !</h4>
+                        <p id="importResultText"></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title" id="titreFormBatiment">➕ Ajouter un Bâtiment</h2>
+                    <form id="formBatiment" onsubmit="sauvegarderBatiment(event)">
+                        <input type="hidden" id="batIdEdit">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Wilaya *</label>
+                                <input type="text" id="batWilaya" required placeholder="Ex: Annaba">
+                            </div>
+                            <div class="form-group">
+                                <label>Commune *</label>
+                                <input type="text" id="batCommune" required placeholder="Ex: Annaba">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nom du Site/Programme *</label>
+                            <input type="text" id="batSite" required placeholder="Ex: Cité AADL El Bouni">
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Bâtiment *</label>
+                                <input type="text" id="batNom" required placeholder="Ex: Bâtiment A">
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre de Logements *</label>
+                                <input type="number" id="batLogements" required min="1" placeholder="Ex: 120">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="batCharge" checked>
+                                Avec charges (copropriété)
+                            </label>
+                        </div>
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary" id="btnSubmitBatiment">💾 Enregistrer</button>
+                            <button type="button" class="btn btn-secondary" id="btnCancelEdit" style="display:none;" onclick="annulerEditBatiment()">❌ Annuler</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">🏢 Liste des Bâtiments</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchBatiment" placeholder="🔍 Rechercher un bâtiment..." onkeyup="filtrerBatiments()">
+                    </div>
+                    <div id="listeBatiments"></div>
+                </div>
+            </div>
+
+            <!-- Gestion des Ascenseurs -->
+            <div id="ascenseurs" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">➕ Ajouter un Ascenseur</h2>
+                    <form id="formAscenseur" onsubmit="ajouterAscenseur(event)">
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label>Bâtiment *</label>
+                                <select id="ascBatiment" required onchange="chargerInfoBatiment()">
+                                    <option value="">-- Choisir --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Marque *</label>
+                                <input type="text" id="ascMarque" required placeholder="Ex: KONE, OTIS, SCHINDLER">
+                            </div>
+                            <div class="form-group">
+                                <label>Statut *</label>
+                                <select id="ascStatut" required>
+                                    <option value="OPERATIONNEL">✅ Opérationnel</option>
+                                    <option value="NMS">⏸️ Non mis en service</option>
+                                    <option value="PANNE">🔴 En panne</option>
+                                    <option value="REPARATION">🔧 En réparation</option>
+                                    <option value="REFORME">⚫ Réformé/Hors service définitif</option>
+                                    <option value="AUTRE">❓ Autre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="infoBatiment" style="display:none; background:#e9ecef; padding:15px; border-radius:10px;">
+                            <!-- Info du bâtiment sélectionné -->
+                        </div>
+                        <button type="submit" class="btn btn-primary">💾 Ajouter l'Ascenseur</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">🛗 Liste des Ascenseurs</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchAscenseur" placeholder="🔍 Rechercher un ascenseur..." onkeyup="filtrerAscenseurs()">
+                    </div>
+                    <div id="listeAscenseurs"></div>
+                </div>
+            </div>
+
+            <!-- Gestion des Pannes -->
+            <div id="pannes" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">🚨 Déclarer une Panne</h2>
+                    <form id="formPanne" onsubmit="declarerPanne(event)">
+                        <div class="form-group">
+                            <label>Sélectionner l'Ascenseur *</label>
+                            <select id="panneAscenseur" required>
+                                <option value="">-- Choisir un ascenseur --</option>
+                            </select>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Type de Panne *</label>
+                                <select id="panneType" required>
+                                    <option value="MECANIQUE">Mécanique</option>
+                                    <option value="ELECTRIQUE">Électrique</option>
+                                    <option value="PORTE">Porte</option>
+                                    <option value="CABINE">Cabine</option>
+                                    <option value="ARRET_URGENCE">Arrêt d'urgence</option>
+                                    <option value="AUTRE">Autre</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Constaté par *</label>
+                                <input type="text" id="panneConstat" required placeholder="Ex: M. Djejeli Nacir - Technicien">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description détaillée *</label>
+                            <textarea id="panneDesc" required placeholder="Décrire la panne en détail..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger">⚠️ Déclarer la Panne</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">🔧 Clôturer une Panne</h2>
+                    <form id="formReparation" onsubmit="cloturerPanne(event)">
+                        <div class="form-group">
+                            <label>Sélectionner la Panne à clôturer *</label>
+                            <select id="reparationPanne" required>
+                                <option value="">-- Choisir une panne ouverte --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Réparateur / Entreprise *</label>
+                            <input type="text" id="reparationEntreprise" required placeholder="Ex: ELEVATOR SERVICES ALGERIE">
+                        </div>
+                        <div class="form-group">
+                            <label>Coût de réparation (DZD) *</label>
+                            <input type="number" id="reparationCout" required min="0" placeholder="Ex: 45000">
+                        </div>
+                        <div class="form-group">
+                            <label>Travail effectué / Observations *</label>
+                            <textarea id="reparationObs" required placeholder="Décrire les réparations effectuées..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">✅ Clôturer la Panne</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">📋 Historique des Pannes</h2>
+                    <div id="listePannes"></div>
+                </div>
+            </div>
+
+            <!-- États et PV -->
+            <div id="etats" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">📊 État du Parc Immobilier</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="genererEtatGlobal()">👁️ Afficher l'État</button>
+                        <button class="btn btn-success" onclick="exportExcel()">📥 Export Excel (.xlsx)</button>
+                    </div>
+                    <div id="etatGlobalContainer" style="margin-top: 20px; overflow-x: auto;"></div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">📝 Générer des PV</h2>
+                    <div class="form-group">
+                        <label>Sélectionner une Panne</label>
+                        <select id="pvPanneSelect">
+                            <option value="">-- Choisir une panne --</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="genererPV('constat')">📄 PV de Constat</button>
+                        <button class="btn btn-success" onclick="genererPV('reparation')">📄 PV de Réparation</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export/Import -->
+            <div id="export" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">💾 Sauvegarde des Données</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="exporterDonnees()">💾 Exporter JSON</button>
+                        <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">📤 Importer JSON</button>
+                        <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importerDonnees(this)">
+                    </div>
+                    <p style="margin-top: 15px; color: #6c757d;">
+                        Les données sont automatiquement sauvegardées dans le navigateur (localStorage).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour afficher les PV -->
+    <div id="modalPV" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">PV Document</h3>
+                <button class="close-btn" onclick="fermerModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="pvContainer"></div>
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="imprimerPV()">🖨️ Imprimer</button>
+                    <button class="btn btn-success" onclick="telechargerPV()">💾 Télécharger TXT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour modifier ascenseur -->
+    <div id="modalEditAsc" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Modifier l'Ascenseur</h3>
+                <button class="close-btn" onclick="fermerModalEditAsc()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditAscenseur" onsubmit="sauvegarderEditAscenseur(event)">
+                    <input type="hidden" id="editAscId">
+                    <div class="form-group">
+                        <label>Marque</label>
+                        <input type="text" id="editAscMarque" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select id="editAscStatut" required>
+                            <option value="OPERATIONNEL">✅ Opérationnel</option>
+                            <option value="NMS">⏸️ Non mis en service</option>
+                            <option value="PANNE">🔴 En panne</option>
+                            <option value="REPARATION">🔧 En réparation</option>
+                            <option value="REFORME">⚫ Réformé/Hors service définitif</option>
+                            <option value="AUTRE">❓ Autre</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">💾 Sauvegarder</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== SÉCURITÉ ====================
+        const MOT_DE_PASSE = 'Gestimmo@2026';
+        let isUnlocked = false;
+
+        // Protection contre l'accès au code source
+        document.addEventListener('keydown', function(e) {
+            // Bloquer F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                (e.ctrlKey && e.key === 'u') ||
+                (e.ctrlKey && e.key === 's')) {
+                e.preventDefault();
+                alert('🔒 Accès au code source verrouillé !\nCette application est protégée.');
+                return false;
+            }
+        });
+
+        // Bloquer le clic droit
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert('🔒 Clic droit désactivé pour des raisons de sécurité.');
+            return false;
+        });
+
+        // Détection de la console
+        let devtools = function() {};
+        devtools.toString = function() {
+            if (!isUnlocked) {
+                alert('🔒 Console de développement détectée !\nFermez la console pour continuer.');
+            }
+            return '-';
+        };
+        console.log('%c', devtools);
+
+        // Protection supplémentaire
+        setInterval(function() {
+            if (window.outerHeight - window.innerHeight > 200 ||
+                window.outerWidth - window.innerWidth > 200) {
+                if (!isUnlocked) {
+                    document.body.innerHTML = '<h1 style="text-align:center;color:red;padding:50px;">🔒 ACCÈS INTERDIT</h1>';
+                }
+            }
+        }, 1000);
+
+        function verifierMotDePasse() {
+            const input = document.getElementById('passwordInput').value;
+
+            if (input === MOT_DE_PASSE) {
+                isUnlocked = true;
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('mainContainer').classList.add('unlocked');
+                document.getElementById('lockAppBtn').classList.add('visible');
+                document.getElementById('errorMessage').style.display = 'none';
+
+                // Initialiser l'application
+                init();
+            } else {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+
+                // Effet de secousse
+                const container = document.querySelector('.lock-container');
+                container.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    container.style.animation = '';
+                }, 500);
+            }
+        }
+
+        function verrouillerApplication() {
+            if (confirm('Êtes-vous sûr de vouloir verrouiller l\'application ?')) {
+                location.reload();
+            }
+        }
+
+        // Ajouter l'animation de secousse
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // ==================== DONNÉES ====================
+        let data = {
+            batiments: [],
+            ascenseurs: [],
+            pannes: [],
+            idCounter: 0
+        };
+
+        let currentPVContent = '';
+        let excelDataToImport = []; // Données Excel en attente d'importation
+
+        const STATUTS = {
+            'OPERATIONNEL': { label: '✅ Opérationnel', class: 'badge-success' },
+            'NMS': { label: '⏸️ NMS', class: 'badge-warning' },
+            'PANNE': { label: '🔴 En panne', class: 'badge-danger' },
+            'REPARATION': { label: '🔧 En réparation', class: 'badge-info' },
+            'REFORME': { label: '⚫ Réformé', class: 'badge-secondary' },
+            'AUTRE': { label: '❓ Autre', class: 'badge-dark' }
+        };
+
+        // ==================== INITIALISATION ====================
+        function init() {
+            chargerDonnees();
+            if (data.batiments.length === 0) {
+                // Données de démonstration
+                const bat1 = ajouterBatimentDemo("Annaba", "Annaba", "Cité AADL El Bouni", "Bâtiment A", 120, true);
+                ajouterAscenseurDemo(bat1.id, "OTIS", "OPERATIONNEL");
+                ajouterAscenseurDemo(bat1.id, "OTIS", "OPERATIONNEL");
+
+                const bat2 = ajouterBatimentDemo("Annaba", "Annaba", "Cité AADL El Bouni", "Bâtiment B", 80, true);
+                ajouterAscenseurDemo(bat2.id, "OTIS", "PANNE");
+
+                const bat3 = ajouterBatimentDemo("El Tarf", "El Kala", "AADL El Kala", "Bâtiment 1", 60, false);
+                ajouterAscenseurDemo(bat3.id, "SCHINDLER", "NMS");
+
+                const bat4 = ajouterBatimentDemo("Annaba", "El Bouni", "Cité 500 Logts", "Bâtiment C", 48, true);
+                ajouterAscenseurDemo(bat4.id, "SCHINDLER", "REFORME");
+            }
+            mettreAJourInterface();
+            initDragAndDrop();
+        }
+
+        function ajouterBatimentDemo(wilaya, commune, site, batiment, logements, charge) {
+            const bat = {
+                id: genererId("BAT"),
+                wilaya, commune, site, batiment, logements, avecCharge: charge
+            };
+            data.batiments.push(bat);
+            return bat;
+        }
+
+        function ajouterAscenseurDemo(batimentId, marque, statut) {
+            data.ascenseurs.push({
+                id: genererId("ASC"),
+                batimentId: batimentId,
+                marque: marque.toUpperCase(),
+                statut: statut
+            });
+        }
+
+        // ==================== IMPORT EXCEL ====================
+        function initDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            dropZone.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            document.getElementById('dropZone').classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            document.getElementById('dropZone').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFiles(files[0]);
+            }
+        }
+
+        function handleExcelFile(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFiles(file);
+            }
+        }
+
+        function handleFiles(file) {
+            const validExtensions = ['.xlsx', '.xls', '.csv'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions.includes(fileExtension)) {
+                alert('❌ Format de fichier non valide. Veuillez sélectionner un fichier Excel (.xlsx, .xls) ou CSV (.csv)');
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Prendre la première feuille
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convertir en JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length < 2) {
+                        alert('❌ Le fichier semble vide ou mal formaté');
+                        return;
+                    }
+                    
+                    traiterDonneesExcel(jsonData);
+                } catch (error) {
+                    alert('❌ Erreur lors de la lecture du fichier: ' + error.message);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function traiterDonneesExcel(jsonData) {
+            // Détecter les en-têtes (première ligne ou chercher les colonnes connues)
+            let headers = [];
+            let dataStartIndex = 0;
+            
+            // Chercher la ligne d'en-têtes
+            for (let i = 0; i < Math.min(5, jsonData.length); i++) {
+                const row = jsonData[i];
+                if (row && row.length >= 4) {
+                    const rowText = row.join(' ').toLowerCase();
+                    if (rowText.includes('wilaya') || rowText.includes('commune') || 
+                        rowText.includes('batiment') || rowText.includes('site')) {
+                        headers = row.map(h => String(h).trim().toLowerCase());
+                        dataStartIndex = i + 1;
+                        break;
+                    }
+                }
+            }
+            
+            // Si pas d'en-têtes trouvés, utiliser les indices par défaut
+            if (headers.length === 0) {
+                headers = ['wilaya', 'commune', 'site', 'batiment', 'logements', 'charge'];
+                dataStartIndex = 0;
+            }
+            
+            // Mapping des colonnes
+            const columnMap = {
+                'wilaya': ['wilaya', 'wil', 'w', 'gouvernorat', 'province'],
+                'commune': ['commune', 'comm', 'c', 'municipalité', 'ville'],
+                'site': ['site', 'programme', 'projet', 'cité', 'residence', 'nom du site', 'site/programme'],
+                'batiment': ['batiment', 'bâtiment', 'bat', 'b', 'immeuble', 'bloc', 'building'],
+                'logements': ['logements', 'logt', 'log', 'nombre de logements', 'nb logements', 'appartements', 'nb logts', 'logts'],
+                'charge': ['charge', 'avec charge', 'copropriété', 'copro', 'charges', 'avec_charge', 'gestion']
+            };
+            
+            const findColumnIndex = (possibleNames) => {
+                for (let name of possibleNames) {
+                    const idx = headers.findIndex(h => h.includes(name));
+                    if (idx !== -1) return idx;
+                }
+                return -1;
+            };
+            
+            const colIndices = {
+                wilaya: findColumnIndex(columnMap.wilaya),
+                commune: findColumnIndex(columnMap.commune),
+                site: findColumnIndex(columnMap.site),
+                batiment: findColumnIndex(columnMap.batiment),
+                logements: findColumnIndex(columnMap.logements),
+                charge: findColumnIndex(columnMap.charge)
+            };
+            
+            // Vérifier les colonnes obligatoires
+            if (colIndices.wilaya === -1 || colIndices.commune === -1 || 
+                colIndices.site === -1 || colIndices.batiment === -1) {
+                alert('❌ Colonnes obligatoires manquantes. Le fichier doit contenir au minimum: Wilaya, Commune, Site, Bâtiment');
+                return;
+            }
+            
+            // Parser les données
+            excelDataToImport = [];
+            const erreurs = [];
+            
+            for (let i = dataStartIndex; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length === 0) continue; // Ignorer les lignes vides
+                
+                const wilaya = colIndices.wilaya !== -1 ? String(row[colIndices.wilaya] || '').trim() : '';
+                const commune = colIndices.commune !== -1 ? String(row[colIndices.commune] || '').trim() : '';
+                const site = colIndices.site !== -1 ? String(row[colIndices.site] || '').trim() : '';
+                const batiment = colIndices.batiment !== -1 ? String(row[colIndices.batiment] || '').trim() : '';
+                
+                // Ignorer les lignes sans données essentielles
+                if (!wilaya && !commune && !site && !batiment) continue;
+                
+                let logements = 0;
+                if (colIndices.logements !== -1 && row[colIndices.logements]) {
+                    logements = parseInt(row[colIndices.logements]) || 0;
+                }
+                
+                let avecCharge = true;
+                if (colIndices.charge !== -1 && row[colIndices.charge] !== undefined) {
+                    const chargeVal = String(row[colIndices.charge]).toLowerCase().trim();
+                    avecCharge = chargeVal === 'oui' || chargeVal === 'yes' || chargeVal === 'true' || 
+                                 chargeVal === '1' || chargeVal === 'x' || chargeVal === 'avec';
+                }
+                
+                // Validation
+                let erreur = null;
+                if (!wilaya) erreur = 'Wilaya manquante';
+                else if (!commune) erreur = 'Commune manquante';
+                else if (!site) erreur = 'Site manquant';
+                else if (!batiment) erreur = 'Bâtiment manquant';
+                
+                excelDataToImport.push({
+                    ligne: i + 1,
+                    wilaya,
+                    commune,
+                    site,
+                    batiment,
+                    logements,
+                    avecCharge,
+                    erreur,
+                    valide: !erreur
+                });
+            }
+            
+            afficherApercuImportation();
+        }
+
+        function afficherApercuImportation() {
+            const previewContainer = document.getElementById('previewTableContainer');
+            const importPreview = document.getElementById('importPreview');
+            const importStats = document.getElementById('importStats');
+            
+            const valides = excelDataToImport.filter(d => d.valide).length;
+            const invalides = excelDataToImport.filter(d => !d.valide).length;
+            
+            // Créer le tableau d'aperçu
+            let html = '<table><thead><tr>';
+            html += '<th>Ligne</th><th>Wilaya</th><th>Commune</th><th>Site</th>';
+            html += '<th>Bâtiment</th><th>Logements</th><th>Charge</th><th>Statut</th>';
+            html += '</tr></thead><tbody>';
+            
+            excelDataToImport.slice(0, 50).forEach(row => { // Limiter à 50 lignes pour l'aperçu
+                const rowClass = row.valide ? 'success-row' : 'error-row';
+                const statut = row.valide ? '✅ OK' : `❌ ${row.erreur}`;
+                
+                html += `<tr class="${rowClass}">
+                    <td>${row.ligne}</td>
+                    <td>${row.wilaya}</td>
+                    <td>${row.commune}</td>
+                    <td>${row.site}</td>
+                    <td>${row.batiment}</td>
+                    <td>${row.logements || '-'}</td>
+                    <td>${row.avecCharge ? 'Oui' : 'Non'}</td>
+                    <td>${statut}</td>
+                </tr>`;
+            });
+            
+            if (excelDataToImport.length > 50) {
+                html += `<tr><td colspan="8" style="text-align:center; font-style:italic;">
+                    ... et ${excelDataToImport.length - 50} autres lignes
+                </td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            previewContainer.innerHTML = html;
+            
+            // Statistiques
+            importStats.innerHTML = `
+                <div class="import-stat">
+                    <h4>${excelDataToImport.length}</h4>
+                    <p>Total lignes</p>
+                </div>
+                <div class="import-stat" style="color: #38ef7d;">
+                    <h4>${valides}</h4>
+                    <p>Valides</p>
+                </div>
+                <div class="import-stat" style="color: #ff6b6b;">
+                    <h4>${invalides}</h4>
+                    <p>Erreurs</p>
+                </div>
+            `;
+            
+            importPreview.classList.remove('hidden');
+            document.getElementById('importResult').classList.add('hidden');
+        }
+
+        function confirmerImportation() {
+            const valides = excelDataToImport.filter(d => d.valide);
+            
+            if (valides.length === 0) {
+                alert('❌ Aucune donnée valide à importer');
+                return;
+            }
+            
+            if (!confirm(`Voulez-vous importer ${valides.length} bâtiment(s) ?\n\nLes bâtiments existants avec le même site et même nom ne seront pas dupliqués.`)) {
+                return;
+            }
+            
+            let ajoutes = 0;
+            let existants = 0;
+            
+            valides.forEach(row => {
+                // Vérifier si le bâtiment existe déjà (même site + même bâtiment)
+                const existe = data.batiments.some(b => 
+                    b.site.toLowerCase() === row.site.toLowerCase() && 
+                    b.batiment.toLowerCase() === row.batiment.toLowerCase()
+                );
+                
+                if (existe) {
+                    existants++;
+                } else {
+                    const newBat = {
+                        id: genererId("BAT"),
+                        wilaya: row.wilaya,
+                        commune: row.commune,
+                        site: row.site,
+                        batiment: row.batiment,
+                        logements: row.logements || 0,
+                        avecCharge: row.avecCharge
+                    };
+                    data.batiments.push(newBat);
+                    ajoutes++;
+                }
+            });
+            
+            sauvegarderDonnees();
+            afficherBatiments();
+            mettreAJourStats();
+            
+            // Afficher le résultat
+            document.getElementById('importResult').classList.remove('hidden');
+            document.getElementById('importResultText').innerHTML = `
+                <strong>${ajoutes}</strong> bâtiment(s) ajouté(s)<br>
+                <strong>${existants}</strong> bâtiment(s) déjà existant(s) ignoré(s)<br>
+                <strong>${excelDataToImport.filter(d => !d.valide).length}</strong> ligne(s) avec erreur(s) ignorée(s)
+            `;
+            
+            document.getElementById('importPreview').classList.add('hidden');
+            excelDataToImport = [];
+        }
+
+        function annulerImportation() {
+            excelDataToImport = [];
+            document.getElementById('importPreview').classList.add('hidden');
+            document.getElementById('importResult').classList.add('hidden');
+            document.getElementById('excelFileInput').value = '';
+        }
+
+        function telechargerModeleExcel() {
+            // Créer un modèle Excel
+            const wb = XLSX.utils.book_new();
+            
+            // Données d'exemple
+            const data = [
+                ['Wilaya', 'Commune', 'Site/Programme', 'Bâtiment', 'Logements', 'Avec Charge (Oui/Non)'],
+                ['Annaba', 'Annaba', 'Cité AADL El Bouni', 'Bâtiment A', 120, 'Oui'],
+                ['Annaba', 'Annaba', 'Cité AADL El Bouni', 'Bâtiment B', 80, 'Oui'],
+                ['El Tarf', 'El Kala', 'AADL El Kala', 'Bâtiment 1', 60, 'Non'],
+                ['Annaba', 'El Bouni', 'Cité 500 Logts', 'Bâtiment C', 48, 'Oui']
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Ajuster la largeur des colonnes
+            ws['!cols'] = [
+                {w: 15}, // Wilaya
+                {w: 15}, // Commune
+                {w: 30}, // Site
+                {w: 20}, // Bâtiment
+                {w: 12}, // Logements
+                {w: 15}  // Charge
+            ];
+            
+            // Styliser l'en-tête
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+                if (cell) {
+                    cell.s = {
+                        fill: { fgColor: { rgb: "1E3C72" } },
+                        font: { color: { rgb: "FFFFFF" }, bold: true },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                }
+            }
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Modèle Bâtiments");
+            
+            // Ajouter une feuille d'instructions
+            const instructions = [
+                ['INSTRUCTIONS D\'IMPORTATION'],
+                [''],
+                ['1. Colonnes obligatoires: Wilaya, Commune, Site/Programme, Bâtiment'],
+                ['2. Colonnes optionnelles: Logements (nombre), Avec Charge (Oui/Non)'],
+                [''],
+                ['RÈGLES:'],
+                ['- Les noms de colonnes peuvent varier (ex: "Wil", "Comm", "Site", "Bat")'],
+                ['- Les lignes vides sont ignorées'],
+                ['- Les bâtiments déjà existants (même Site + Bâtiment) ne seront pas dupliqués'],
+                ['- Formats acceptés: .xlsx, .xls, .csv'],
+                [''],
+                ['EXEMPLE DE NOMS DE COLONNES ACCEPTÉS:'],
+                ['- Wilaya: "Wilaya", "Wil", "W", "Gouvernorat"'],
+                ['- Commune: "Commune", "Comm", "C", "Ville"'],
+                ['- Site: "Site", "Programme", "Projet", "Cité", "Residence"'],
+                ['- Bâtiment: "Bâtiment", "Batiment", "Bat", "B", "Immeuble", "Bloc"'],
+                ['- Logements: "Logements", "Logts", "Nb Logements", "Appartements"'],
+                ['- Charge: "Charge", "Avec Charge", "Copropriété", "Oui/Non"']
+            ];
+            
+            const wsInstr = XLSX.utils.aoa_to_sheet(instructions);
+            wsInstr['!cols'] = [{w: 80}];
+            XLSX.utils.book_append_sheet(wb, wsInstr, "Instructions");
+            
+            XLSX.writeFile(wb, 'Modele_Import_Batiments_AADL.xlsx');
+        }
+
+        // ==================== UTILITAIRES ====================
+        function genererId(prefix) {
+            data.idCounter++;
+            return `${prefix}-${new Date().toISOString().slice(0,7).replace('-','')}-${String(data.idCounter).padStart(4,'0')}`;
+        }
+
+        function sauvegarderDonnees() {
+            localStorage.setItem('aadl_ascenseurs_data', JSON.stringify(data));
+        }
+
+        function chargerDonnees() {
+            const saved = localStorage.getItem('aadl_ascenseurs_data');
+            if (saved) {
+                data = JSON.parse(saved);
+            }
+        }
+
+        function exporterDonnees() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `AADL_Ascenseurs_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importerDonnees(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    data = JSON.parse(e.target.result);
+                    sauvegarderDonnees();
+                    mettreAJourInterface();
+                    alert('Données importées avec succès !');
+                } catch (err) {
+                    alert('Erreur lors de l\'import : ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==================== NAVIGATION ====================
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabId === 'dashboard') mettreAJourStats();
+            if (tabId === 'batiments') afficherBatiments();
+            if (tabId === 'ascenseurs') {
+                chargerSelectBatiments();
+                afficherAscenseurs();
+            }
+            if (tabId === 'pannes') mettreAJourSelectsPanne();
+            if (tabId === 'etats') mettreAJourSelectPV();
+        }
+
+        // ==================== BÂTIMENTS ====================
+        function sauvegarderBatiment(event) {
+            event.preventDefault();
+
+            const idEdit = document.getElementById('batIdEdit').value;
+
+            const batData = {
+                wilaya: document.getElementById('batWilaya').value,
+                commune: document.getElementById('batCommune').value,
+                site: document.getElementById('batSite').value,
+                batiment: document.getElementById('batNom').value,
+                logements: parseInt(document.getElementById('batLogements').value),
+                avecCharge: document.getElementById('batCharge').checked
+            };
+
+            if (idEdit) {
+                const bat = data.batiments.find(b => b.id === idEdit);
+                if (bat) {
+                    Object.assign(bat, batData);
+                    alert('Bâtiment modifié avec succès !');
+                }
+            } else {
+                batData.id = genererId("BAT");
+                data.batiments.push(batData);
+                alert('Bâtiment ajouté avec succès !');
+            }
+
+            sauvegarderDonnees();
+            document.getElementById('formBatiment').reset();
+            annulerEditBatiment();
+            afficherBatiments();
+        }
+
+        function editBatiment(id) {
+            const bat = data.batiments.find(b => b.id === id);
+            if (!bat) return;
+
+            document.getElementById('batIdEdit').value = bat.id;
+            document.getElementById('batWilaya').value = bat.wilaya;
+            document.getElementById('batCommune').value = bat.commune;
+            document.getElementById('batSite').value = bat.site;
+            document.getElementById('batNom').value = bat.batiment;
+            document.getElementById('batLogements').value = bat.logements;
+            document.getElementById('batCharge').checked = bat.avecCharge;
+
+            document.getElementById('titreFormBatiment').textContent = '✏️ Modifier le Bâtiment';
+            document.getElementById('btnSubmitBatiment').textContent = '💾 Sauvegarder les modifications';
+            document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+
+            window.scrollTo(0, 0);
+        }
+
+        function annulerEditBatiment() {
+            document.getElementById('batIdEdit').value = '';
+            document.getElementById('formBatiment').reset();
+            document.getElementById('titreFormBatiment').textContent = '➕ Ajouter un Bâtiment';
+            document.getElementById('btnSubmitBatiment').textContent = '💾 Enregistrer';
+            document.getElementById('btnCancelEdit').style.display = 'none';
+        }
+
+        function afficherBatiments() {
+            const container = document.getElementById('listeBatiments');
+            const search = document.getElementById('searchBatiment').value.toLowerCase();
+
+            let html = '<table><thead><tr>' +
+                '<th>ID</th><th>Wilaya</th><th>Commune</th><th>Site</th><th>Bâtiment</th>' +
+                '<th>Logements</th><th>Charge</th><th>Ascenseurs</th><th>Actions</th>' +
+                '</tr></thead><tbody>';
+
+            data.batiments.forEach(bat => {
+                if (search && !Object.values(bat).some(v => String(v).toLowerCase().includes(search))) return;
+
+                const ascenseurs = data.ascenseurs.filter(a => a.batimentId === bat.id);
+                const nbPannes = ascenseurs.filter(a => a.statut === 'PANNE').length;
+
+                html += `<tr>
+                    <td>${bat.id}</td>
+                    <td>${bat.wilaya}</td>
+                    <td>${bat.commune}</td>
+                    <td>${bat.site}</td>
+                    <td>${bat.batiment}</td>
+                    <td>${bat.logements}</td>
+                    <td>${bat.avecCharge ? 'OUI' : 'NON'}</td>
+                    <td>${ascenseurs.length} ${nbPannes > 0 ? `<span class="badge badge-danger">${nbPannes} panne(s)</span>` : ''}</td>
+                    <td class="actions-cell">
+                        <button class="btn btn-info btn-small" onclick="editBatiment('${bat.id}')">✏️</button>
+                        <button class="btn btn-danger btn-small" onclick="supprimerBatiment('${bat.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function filtrerBatiments() {
+            afficherBatiments();
+        }
+
+        function supprimerBatiment(id) {
+            if (!confirm('Supprimer ce bâtiment et tous ses ascenseurs ?')) return;
+
+            data.batiments = data.batiments.filter(b => b.id !== id);
+            data.ascenseurs = data.ascenseurs.filter(a => a.batimentId !== id);
+            sauvegarderDonnees();
+            afficherBatiments();
+        }
+
+        // ==================== ASCENSEURS ====================
+        function chargerSelectBatiments() {
+            const select = document.getElementById('ascBatiment');
+            select.innerHTML = '<option value="">-- Choisir --</option>';
+
+            data.batiments.forEach(bat => {
+                select.innerHTML += `<option value="${bat.id}">${bat.wilaya} - ${bat.site} - ${bat.batiment}</option>`;
+            });
+        }
+
+        function chargerInfoBatiment() {
+            const batId = document.getElementById('ascBatiment').value;
+            const infoDiv = document.getElementById('infoBatiment');
+
+            if (!batId) {
+                infoDiv.style.display = 'none';
+                return;
+            }
+
+            const bat = data.batiments.find(b => b.id === batId);
+            if (bat) {
+                infoDiv.innerHTML = `
+                    <strong>Bâtiment sélectionné:</strong><br>
+                    Wilaya: ${bat.wilaya} | Commune: ${bat.commune}<br>
+                    Site: ${bat.site} | Bâtiment: ${bat.batiment}<br>
+                    Logements: ${bat.logements} | Charge: ${bat.avecCharge ? 'OUI' : 'NON'}
+                `;
+                infoDiv.style.display = 'block';
+            }
+        }
+
+        function ajouterAscenseur(event) {
+            event.preventDefault();
+
+            const asc = {
+                id: genererId("ASC"),
+                batimentId: document.getElementById('ascBatiment').value,
+                marque: document.getElementById('ascMarque').value.toUpperCase(),
+                statut: document.getElementById('ascStatut').value
+            };
+
+            data.ascenseurs.push(asc);
+            sauvegarderDonnees();
+
+            document.getElementById('formAscenseur').reset();
+            document.getElementById('infoBatiment').style.display = 'none';
+
+            afficherAscenseurs();
+            alert('Ascenseur ajouté avec succès !');
+        }
+
+        function afficherAscenseurs() {
+            const container = document.getElementById('listeAscenseurs');
+            const search = document.getElementById('searchAscenseur').value.toLowerCase();
+
+            let html = '<table><thead><tr>' +
+                '<th>ID</th><th>Bâtiment</th><th>Marque</th><th>Statut</th><th>Actions</th>' +
+                '</tr></thead><tbody>';
+
+            data.ascenseurs.forEach(asc => {
+                const bat = data.batiments.find(b => b.id === asc.batimentId);
+                const statutInfo = STATUTS[asc.statut] || STATUTS['AUTRE'];
+
+                if (search && !(`${asc.id} ${asc.marque} ${bat ? bat.site : ''}`.toLowerCase().includes(search))) return;
+
+                html += `<tr>
+                    <td>${asc.id}</td>
+                    <td>${bat ? `${bat.wilaya} - ${bat.site} - ${bat.batiment}` : 'N/A'}</td>
+                    <td>${asc.marque}</td>
+                    <td><span class="badge ${statutInfo.class}">${statutInfo.label}</span></td>
+                    <td class="actions-cell">
+                        <button class="btn btn-info btn-small" onclick="editAscenseur('${asc.id}')">✏️</button>
+                        <button class="btn btn-danger btn-small" onclick="supprimerAscenseur('${asc.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function filtrerAscenseurs() {
+            afficherAscenseurs();
+        }
+
+        function editAscenseur(id) {
+            const asc = data.ascenseurs.find(a => a.id === id);
+            if (!asc) return;
+
+            document.getElementById('editAscId').value = asc.id;
+            document.getElementById('editAscMarque').value = asc.marque;
+            document.getElementById('editAscStatut').value = asc.statut;
+
+            document.getElementById('modalEditAsc').classList.add('active');
+        }
+
+        function sauvegarderEditAscenseur(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('editAscId').value;
+            const asc = data.ascenseurs.find(a => a.id === id);
+
+            if (asc) {
+                asc.marque = document.getElementById('editAscMarque').value.toUpperCase();
+                asc.statut = document.getElementById('editAscStatut').value;
+
+                sauvegarderDonnees();
+                fermerModalEditAsc();
+                afficherAscenseurs();
+                mettreAJourStats();
+                alert('Ascenseur modifié avec succès !');
+            }
+        }
+
+        function fermerModalEditAsc() {
+            document.getElementById('modalEditAsc').classList.remove('active');
+        }
+
+        function supprimerAscenseur(id) {
+            if (!confirm('Supprimer cet ascenseur ?')) return;
+
+            data.ascenseurs = data.ascenseurs.filter(a => a.id !== id);
+            sauvegarderDonnees();
+            afficherAscenseurs();
+        }
+
+        // ==================== PANNES ====================
+        function declarerPanne(event) {
+            event.preventDefault();
+
+            const panne = {
+                id: genererId("PAN"),
+                ascenseurId: document.getElementById('panneAscenseur').value,
+                type: document.getElementById('panneType').value,
+                description: document.getElementById('panneDesc').value,
+                constatePar: document.getElementById('panneConstat').value,
+                dateConstat: new Date().toISOString(),
+                statut: 'Ouverte'
+            };
+
+            data.pannes.push(panne);
+
+            const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+            if (asc) asc.statut = 'PANNE';
+
+            sauvegarderDonnees();
+            document.getElementById('formPanne').reset();
+            mettreAJourSelectsPanne();
+            afficherPannes();
+            mettreAJourStats();
+
+            alert('Panne déclarée ! PV de constat disponible dans l\'onglet États.');
+        }
+
+        function cloturerPanne(event) {
+            event.preventDefault();
+
+            const panneId = document.getElementById('reparationPanne').value;
+            const panne = data.pannes.find(p => p.id === panneId);
+
+            if (!panne) return;
+
+            panne.statut = 'Clôturée';
+            panne.dateReparation = new Date().toISOString();
+            panne.reparateur = document.getElementById('reparationEntreprise').value;
+            panne.cout = parseFloat(document.getElementById('reparationCout').value);
+            panne.observations = document.getElementById('reparationObs').value;
+
+            const pannesOuvertes = data.pannes.filter(p =>
+                p.ascenseurId === panne.ascenseurId && p.statut === 'Ouverte'
+            );
+
+            if (pannesOuvertes.length === 0) {
+                const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+                if (asc) asc.statut = 'OPERATIONNEL';
+            }
+
+            sauvegarderDonnees();
+            document.getElementById('formReparation').reset();
+            mettreAJourSelectsPanne();
+            afficherPannes();
+            mettreAJourStats();
+
+            alert('Panne clôturée ! PV de réparation disponible.');
+        }
+
+        function afficherPannes() {
+            const container = document.getElementById('listePannes');
+
+            if (data.pannes.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:50px;color:#6c757d;">Aucune panne enregistrée</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr>' +
+                '<th>N° PV</th><th>Date</th><th>Ascenseur</th><th>Type</th>' +
+                '<th>Statut</th><th>Actions</th>' +
+                '</tr></thead><tbody>';
+
+            const pannesTriees = [...data.pannes].sort((a,b) =>
+                new Date(b.dateConstat) - new Date(a.dateConstat)
+            );
+
+            pannesTriees.forEach(panne => {
+                const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+                const bat = asc ? data.batiments.find(b => b.id === asc.batimentId) : null;
+
+                let statutClass = 'badge-warning';
+                if (panne.statut === 'Clôturée') statutClass = 'badge-success';
+                if (panne.statut === 'Ouverte') statutClass = 'badge-danger';
+
+                html += `<tr>
+                    <td>${panne.id}</td>
+                    <td>${new Date(panne.dateConstat).toLocaleString('fr-FR')}</td>
+                    <td>${asc ? asc.marque : 'N/A'}<br><small>${bat ? bat.site : ''}</small></td>
+                    <td>${panne.type}</td>
+                    <td><span class="badge ${statutClass}">${panne.statut}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-small" onclick="voirDetailsPanne('${panne.id}')">👁️</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function voirDetailsPanne(id) {
+            const panne = data.pannes.find(p => p.id === id);
+            if (!panne) return;
+
+            const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+            const bat = asc ? data.batiments.find(b => b.id === asc.batimentId) : null;
+
+            let details = `PANNE: ${panne.id}\n\n`;
+            details += `Date constat: ${new Date(panne.dateConstat).toLocaleString('fr-FR')}\n`;
+            details += `Type: ${panne.type}\n`;
+            details += `Constaté par: ${panne.constatePar}\n\n`;
+            details += `DESCRIPTION:\n${panne.description}\n\n`;
+
+            if (panne.statut === 'Clôturée') {
+                details += `--- RÉPARATION ---\n`;
+                details += `Date: ${new Date(panne.dateReparation).toLocaleString('fr-FR')}\n`;
+                details += `Réparateur: ${panne.reparateur}\n`;
+                details += `Coût: ${panne.cout} DZD\n`;
+                details += `Observations: ${panne.observations}\n`;
+            }
+
+            alert(details);
+        }
+
+        // ==================== ÉTATS ET PV ====================
+        function genererEtatGlobal() {
+            const container = document.getElementById('etatGlobalContainer');
+
+            let html = '<table style="font-size: 0.85em;">';
+            html += '<thead><tr>';
+            html += '<th>N°</th><th>WILAYA</th><th>COMMUNE</th><th>SITE</th><th>BATIMENT</th>';
+            html += '<th>LOGTS</th><th>AVEC CH</th><th>SANS CH</th>';
+            html += '<th>ASC</th><th>MARQUE</th>';
+            html += '<th>OPÉR.</th><th>NMS</th><th>PANNE</th><th>RÉPAR.</th><th>RÉFORM.</th><th>AUTRE</th>';
+            html += '</tr></thead><tbody>';
+
+            let totaux = {
+                logts: 0, avecCharge: 0, sansCharge: 0, asc: 0,
+                operationnel: 0, nms: 0, panne: 0, reparation: 0, reforme: 0, autre: 0
+            };
+
+            data.batiments.forEach((bat, idx) => {
+                const ascenseurs = data.ascenseurs.filter(a => a.batimentId === bat.id);
+                const nbAsc = ascenseurs.length;
+
+                const stats = {
+                    operationnel: ascenseurs.filter(a => a.statut === 'OPERATIONNEL').length,
+                    nms: ascenseurs.filter(a => a.statut === 'NMS').length,
+                    panne: ascenseurs.filter(a => a.statut === 'PANNE').length,
+                    reparation: ascenseurs.filter(a => a.statut === 'REPARATION').length,
+                    reforme: ascenseurs.filter(a => a.statut === 'REFORME').length,
+                    autre: ascenseurs.filter(a => a.statut === 'AUTRE').length
+                };
+
+                const marques = [...new Set(ascenseurs.map(a => a.marque))].join(', ');
+                const avecCh = bat.avecCharge ? bat.logements : 0;
+                const sansCh = !bat.avecCharge ? bat.logements : 0;
+
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${bat.wilaya}</td>
+                    <td>${bat.commune}</td>
+                    <td>${bat.site}</td>
+                    <td>${bat.batiment}</td>
+                    <td>${bat.logements}</td>
+                    <td>${avecCh || '-'}</td>
+                    <td>${sansCh || '-'}</td>
+                    <td>${nbAsc}</td>
+                    <td>${marques}</td>
+                    <td style="text-align:center;${stats.operationnel > 0 ? 'background:#d4edda;' : ''}">${stats.operationnel || '-'}</td>
+                    <td style="text-align:center;${stats.nms > 0 ? 'background:#fff3cd;' : ''}">${stats.nms || '-'}</td>
+                    <td style="text-align:center;${stats.panne > 0 ? 'background:#f8d7da;color:red;font-weight:bold;' : ''}">${stats.panne || '-'}</td>
+                    <td style="text-align:center;${stats.reparation > 0 ? 'background:#d1ecf1;' : ''}">${stats.reparation || '-'}</td>
+                    <td style="text-align:center;${stats.reforme > 0 ? 'background:#e2e3e5;' : ''}">${stats.reforme || '-'}</td>
+                    <td style="text-align:center;">${stats.autre || '-'}</td>
+                </tr>`;
+
+                totaux.logts += bat.logements;
+                totaux.avecCharge += avecCh;
+                totaux.sansCharge += sansCh;
+                totaux.asc += nbAsc;
+                totaux.operationnel += stats.operationnel;
+                totaux.nms += stats.nms;
+                totaux.panne += stats.panne;
+                totaux.reparation += stats.reparation;
+                totaux.reforme += stats.reforme;
+                totaux.autre += stats.autre;
+            });
+
+            html += `<tr style="font-weight:bold;background:#e9ecef;">
+                <td colspan="5">TOTAL</td>
+                <td>${totaux.logts}</td>
+                <td>${totaux.avecCharge}</td>
+                <td>${totaux.sansCharge}</td>
+                <td>${totaux.asc}</td>
+                <td></td>
+                <td style="text-align:center;">${totaux.operationnel}</td>
+                <td style="text-align:center;">${totaux.nms}</td>
+                <td style="text-align:center;color:${totaux.panne > 0 ? 'red' : 'inherit'};">${totaux.panne}</td>
+                <td style="text-align:center;">${totaux.reparation}</td>
+                <td style="text-align:center;">${totaux.reforme}</td>
+                <td style="text-align:center;">${totaux.autre}</td>
+            </tr>`;
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function exportExcel() {
+            const excelData = [];
+
+            excelData.push([
+                'N°', 'WILAYA', 'COMMUNE', 'SITE', 'BATIMENT', 'LOGEMENTS',
+                'AVEC CHARGE', 'SANS CHARGE', 'NB ASCENSEURS', 'MARQUES',
+                'OPÉRATIONNEL', 'NMS', 'EN PANNE', 'EN RÉPARATION', 'RÉFORMÉ', 'AUTRE'
+            ]);
+
+            data.batiments.forEach((bat, idx) => {
+                const ascenseurs = data.ascenseurs.filter(a => a.batimentId === bat.id);
+                const marques = [...new Set(ascenseurs.map(a => a.marque))].join(', ');
+
+                excelData.push([
+                    idx + 1,
+                    bat.wilaya,
+                    bat.commune,
+                    bat.site,
+                    bat.batiment,
+                    bat.logements,
+                    bat.avecCharge ? bat.logements : 0,
+                    !bat.avecCharge ? bat.logements : 0,
+                    ascenseurs.length,
+                    marques,
+                    ascenseurs.filter(a => a.statut === 'OPERATIONNEL').length,
+                    ascenseurs.filter(a => a.statut === 'NMS').length,
+                    ascenseurs.filter(a => a.statut === 'PANNE').length,
+                    ascenseurs.filter(a => a.statut === 'REPARATION').length,
+                    ascenseurs.filter(a => a.statut === 'REFORME').length,
+                    ascenseurs.filter(a => a.statut === 'AUTRE').length
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+            ws['!cols'] = [
+                {w:5}, {w:15}, {w:15}, {w:25}, {w:15}, {w:12},
+                {w:12}, {w:12}, {w:12}, {w:20},
+                {w:12}, {w:8}, {w:10}, {w:12}, {w:10}, {w:8}
+            ];
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+                if (cell) {
+                    cell.s = {
+                        fill: { fgColor: { rgb: "1E3C72" } },
+                        font: { color: { rgb: "FFFFFF" }, bold: true },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                }
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Etat du Parc");
+
+            const ascData = [['ID', 'BÂTIMENT', 'MARQUE', 'STATUT', 'WILAYA', 'COMMUNE', 'SITE']];
+            data.ascenseurs.forEach(asc => {
+                const bat = data.batiments.find(b => b.id === asc.batimentId);
+                ascData.push([
+                    asc.id,
+                    bat ? `${bat.site} - ${bat.batiment}` : 'N/A',
+                    asc.marque,
+                    STATUTS[asc.statut] ? STATUTS[asc.statut].label : asc.statut,
+                    bat ? bat.wilaya : '',
+                    bat ? bat.commune : '',
+                    bat ? bat.site : ''
+                ]);
+            });
+
+            const wsAsc = XLSX.utils.aoa_to_sheet(ascData);
+            wsAsc['!cols'] = [{w:20}, {w:30}, {w:15}, {w:20}, {w:15}, {w:15}, {w:25}];
+            XLSX.utils.book_append_sheet(wb, wsAsc, "Détail Ascenseurs");
+
+            const panneData = [['N° PV', 'DATE', 'ASCENSEUR', 'TYPE', 'STATUT', 'CONSTATÉ PAR', 'RÉPARATEUR', 'COÛT']];
+            data.pannes.forEach(p => {
+                const asc = data.ascenseurs.find(a => a.id === p.ascenseurId);
+                panneData.push([
+                    p.id,
+                    new Date(p.dateConstat).toLocaleString('fr-FR'),
+                    asc ? `${asc.marque} (${asc.id})` : p.ascenseurId,
+                    p.type,
+                    p.statut,
+                    p.constatePar,
+                    p.reparateur || '-',
+                    p.cout || '-'
+                ]);
+            });
+
+            const wsPanne = XLSX.utils.aoa_to_sheet(panneData);
+            wsPanne['!cols'] = [{w:20}, {w:20}, {w:25}, {w:15}, {w:12}, {w:20}, {w:20}, {w:12}];
+            XLSX.utils.book_append_sheet(wb, wsPanne, "Historique Pannes");
+
+            XLSX.writeFile(wb, `AADL_Etat_Parc_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // ==================== GÉNÉRATION DES PV ====================
+        function genererPV(type) {
+            const panneId = document.getElementById('pvPanneSelect').value;
+
+            if (!panneId) {
+                alert('Veuillez sélectionner une panne');
+                return;
+            }
+
+            const panne = data.pannes.find(p => p.id === panneId);
+
+            if (!panne) {
+                alert('Panne non trouvée !');
+                return;
+            }
+
+            const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+            const bat = asc ? data.batiments.find(b => b.id === asc.batimentId) : null;
+
+            let content = '';
+            let title = '';
+
+            if (type === 'constat') {
+                title = 'PV DE CONSTAT DE PANNE';
+                content = creerPVConstatHTML(panne, asc, bat);
+            } else {
+                if (panne.statut !== 'Clôturée') {
+                    alert('Cette panne n\'est pas encore clôturée !');
+                    return;
+                }
+                title = 'PV DE RÉPARATION ET MISE EN SERVICE';
+                content = creerPVReparationHTML(panne, asc, bat);
+            }
+
+            currentPVContent = content;
+
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('pvContainer').innerHTML = `<div class="pv-document">${content}</div>`;
+            document.getElementById('modalPV').classList.add('active');
+        }
+
+        function creerPVConstatHTML(panne, asc, bat) {
+            const dateConstat = new Date(panne.dateConstat).toLocaleString('fr-FR');
+
+            return `
+<div class="pv-header">
+    <h4>RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</h4>
+    <h4>MINISTÈRE DE L'HABITAT ET DE L'URBANISME ET DE LA VILLE ET DE L'AMENAGEMENT DU TERRITOIRE</h4>
+    <p><strong>AGENCE NATIONALE DE L'AMÉLIORATION ET DU DÉVELOPPEMENT DU LOGEMENT (AADL)</strong></p>
+    <p><strong>Filiale Gestion Immobilière - SPA AADL GEST IMMO ANNABA</strong></p>
+    <h2 style="text-decoration: underline;">PV DE CONSTAT DE PANNE</h2>
+</div>
+
+<div class="pv-section">
+    <div class="pv-field"><span class="pv-label">N° PV:</span> ${panne.id}</div>
+    <div class="pv-field"><span class="pv-label">Date de constat:</span> ${dateConstat}</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">IDENTIFICATION DU SITE</div>
+    <div class="pv-field"><span class="pv-label">Wilaya:</span> ${bat ? bat.wilaya : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Commune:</span> ${bat ? bat.commune : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Site/Programme:</span> ${bat ? bat.site : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Bâtiment:</span> ${bat ? bat.batiment : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">ID Ascenseur:</span> ${panne.ascenseurId}</div>
+    <div class="pv-field"><span class="pv-label">Marque:</span> ${asc ? asc.marque : 'N/A'}</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">DESCRIPTION DE LA PANNE</div>
+    <div class="pv-field"><span class="pv-label">Type de panne:</span> ${panne.type}</div>
+    <div class="pv-field"><span class="pv-label">Description détaillée:</span></div>
+    <div style="margin-left: 20px; border: 1px solid #ccc; padding: 10px; min-height: 100px;">
+        ${panne.description ? panne.description.replace(/\n/g, '<br>') : 'Non spécifié'}
+    </div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-field"><span class="pv-label">Constaté par:</span> ${panne.constatePar}</div>
+    <div style="margin-top: 30px;">
+        <div style="border-bottom: 1px solid #000; width: 300px; display: inline-block;"></div>
+        <div style="font-size: 1.0em; margin-top: 5px;">Signature</div>
+    </div>
+</div>
+
+<div class="pv-section" style="background: #ffebee; padding: 15px; border: 2px solid #c62828;">
+    <div style="font-weight: bold; color: #c62828; font-size: 1.2em;">⚠️ ÉTAT DE L'ASCENSEUR: HORS SERVICE</div>
+</div>
+
+<div class="pv-section" style="margin-top: 30px; font-size: 0.8em;">
+    <div class="pv-section-title">DISTRIBUTION</div>
+    <div>- Original: AADL GEST IMMO Annaba</div>
+    <div>- Copie: Sce MAINTENANCE</div>
+    <div>- Copie: ASSURANCE</div>
+</div>
+`;
+        }
+
+        function creerPVReparationHTML(panne, asc, bat) {
+            const dateConstat = new Date(panne.dateConstat).toLocaleString('fr-FR');
+            const dateReparation = panne.dateReparation ? new Date(panne.dateReparation).toLocaleString('fr-FR') : 'N/A';
+
+            const duree = panne.dateReparation ?
+                ((new Date(panne.dateReparation) - new Date(panne.dateConstat)) / 3600000).toFixed(1) :
+                'N/A';
+
+            const coutFormatted = panne.cout ? panne.cout.toLocaleString('fr-FR') + ' DZD' : 'N/A';
+
+            return `
+<div class="pv-header">
+    <h2>RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</h2>
+    <h3>MINISTÈRE DE L'HABITAT ET DE L'URBANISME</h3>
+    <p>AGENCE NATIONALE DE L'AMÉLIORATION ET DU DÉVELOPPEMENT DU LOGEMENT (AADL)</p>
+    <p><strong>Filiale Gestion Immobilière - Antenne Annaba</strong></p>
+    <hr style="border: 2px solid #000; margin: 20px 0;">
+    <h2 style="text-decoration: underline;">PV DE RÉPARATION ET MISE EN SERVICE</h2>
+</div>
+
+<div class="pv-section">
+    <div class="pv-field"><span class="pv-label">N° PV:</span> ${panne.id}-R</div>
+    <div class="pv-field"><span class="pv-label">Date de réparation:</span> ${dateReparation}</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">RÉFÉRENCE PANNE</div>
+    <div class="pv-field"><span class="pv-label">N° PV Constat:</span> ${panne.id}</div>
+    <div class="pv-field"><span class="pv-label">Date de constat:</span> ${dateConstat}</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">IDENTIFICATION</div>
+    <div class="pv-field"><span class="pv-label">Wilaya:</span> ${bat ? bat.wilaya : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Commune:</span> ${bat ? bat.commune : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Site:</span> ${bat ? bat.site : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Bâtiment:</span> ${bat ? bat.batiment : 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Ascenseur:</span> ${panne.ascenseurId} (${asc ? asc.marque : 'N/A'})</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">INTERVENTION</div>
+    <div class="pv-field"><span class="pv-label">Type de panne:</span> ${panne.type}</div>
+    <div class="pv-field"><span class="pv-label">Réparateur/Entreprise:</span> ${panne.reparateur || 'N/A'}</div>
+    <div class="pv-field"><span class="pv-label">Durée d'intervention:</span> ${duree} heures</div>
+    <div class="pv-field"><span class="pv-label">Coût de réparation:</span> ${coutFormatted}</div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">TRAVAIL EFFECTUÉ</div>
+    <div style="border: 1px solid #ccc; padding: 10px; min-height: 100px;">
+        ${panne.observations ? panne.observations.replace(/\n/g, '<br>') : 'Aucune observation'}
+    </div>
+</div>
+
+<div class="pv-section">
+    <div class="pv-section-title">ESSAIS ET VÉRIFICATIONS</div>
+    <ul class="checkbox-list">
+        <li>Fonctionnement montée</li>
+        <li>Fonctionnement descente</li>
+        <li>Arrêt précision niveau</li>
+        <li>Portes ouverture/fermeture</li>
+        <li>Éclairage cabine</li>
+        <li>Bouton d'arrêt d'urgence</li>
+        <li>Signalisation</li>
+    </ul>
+</div>
+
+<div class="pv-section">
+    <div style="margin-bottom: 15px;">
+        <span class="pv-label">RÉSULTAT:</span>
+        <span style="margin-left: 20px;">[ ] SATISFAISANT</span>
+        <span style="margin-left: 20px;">[ ] NON SATISFAISANT</span>
+    </div>
+    <div>
+        <span class="pv-label">L'ascenseur est déclaré:</span>
+        <span style="margin-left: 20px;">[ ] EN SERVICE</span>
+        <span style="margin-left: 20px;">[ ] HORS SERVICE</span>
+    </div>
+</div>
+
+<div class="pv-signatures">
+    <div class="pv-signature-box">
+        <div style="font-weight: bold; margin-bottom: 40px;">Pour le Réparateur</div>
+        <div>Signature et cachet</div>
+    </div>
+    <div class="pv-signature-box">
+        <div style="font-weight: bold; margin-bottom: 40px;">Pour AADL</div>
+        <div>Signature</div>
+    </div>
+</div>
+
+<div style="text-align: right; margin-top: 20px;">
+    <span class="pv-label">Date:</span> ${new Date().toLocaleDateString('fr-FR')}
+</div>
+`;
+        }
+
+        function fermerModal() {
+            document.getElementById('modalPV').classList.remove('active');
+            currentPVContent = '';
+        }
+
+        function imprimerPV() {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>PV - Gestion Ascenseurs AADL GEST IMMO</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; padding: 10px; }
+                        .pv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; }
+                        .pv-section { margin-bottom: 25px; }
+                        .pv-section-title { font-weight: bold; text-decoration: underline; margin-bottom: 10px; }
+                        .pv-field { margin-bottom: 8px; }
+                        .pv-label { font-weight: bold; }
+                        .pv-signatures { margin-top: 50px; display: flex; justify-content: space-between; }
+                        .pv-signature-box { width: 45%; border-top: 1px solid #000; padding-top: 10px; text-align: center; }
+                        .checkbox-list { list-style: none; padding: 0; }
+                        .checkbox-list li { margin-bottom: 8px; }
+                        .checkbox-list li:before { content: "[ ] "; font-weight: bold; }
+                        @media print { body { padding: 10px; } }
+                    </style>
+                </head>
+                <body>
+                    ${currentPVContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function telechargerPV() {
+            if (!currentPVContent) {
+                alert('Aucun PV à télécharger');
+                return;
+            }
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = currentPVContent;
+            const textContent = tempDiv.innerText;
+
+            const title = document.getElementById('modalTitle').textContent.replace(/\s+/g, '_');
+            const blob = new Blob([textContent], {type: 'text/plain;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ==================== MISE À JOUR INTERFACE ====================
+        function mettreAJourInterface() {
+            mettreAJourStats();
+            afficherBatiments();
+            chargerSelectBatiments();
+            afficherAscenseurs();
+        }
+
+        function mettreAJourStats() {
+            const nbBatiments = data.batiments.length;
+            const nbAscenseurs = data.ascenseurs.length;
+            const nbPannesOuvertes = data.pannes.filter(p => p.statut === 'Ouverte').length;
+            const nbOperationnels = data.ascenseurs.filter(a => a.statut === 'OPERATIONNEL').length;
+            const nbEnPanne = data.ascenseurs.filter(a => a.statut === 'PANNE').length;
+            const nbReformes = data.ascenseurs.filter(a => a.statut === 'REFORME').length;
+
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-card">
+                    <h3>${nbBatiments}</h3>
+                    <p>Bâtiments</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${nbAscenseurs}</h3>
+                    <p>Ascenseurs</p>
+                </div>
+                <div class="stat-card" style="${nbPannesOuvertes > 0 ? 'background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);' : ''}">
+                    <h3>${nbPannesOuvertes}</h3>
+                    <p>Pannes en cours</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${nbOperationnels}</h3>
+                    <p>Opérationnels</p>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #868f96 0%, #596164 100%);">
+                    <h3>${nbReformes}</h3>
+                    <p>Réformés</p>
+                </div>
+            `;
+
+            const alertesContainer = document.getElementById('alertesContainer');
+            if (nbPannesOuvertes === 0) {
+                alertesContainer.innerHTML = '<div style="background:#d4edda;color:#155724;padding:15px;border-radius:10px;">✅ Aucune panne en cours - Tous les ascenseurs sont opérationnels</div>';
+            } else {
+                const pannesRecentes = data.pannes
+                    .filter(p => p.statut === 'Ouverte')
+                    .sort((a,b) => new Date(b.dateConstat) - new Date(a.dateConstat))
+                    .slice(0, 5);
+
+                let html = '';
+                pannesRecentes.forEach(panne => {
+                    const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+                    const bat = asc ? data.batiments.find(b => b.id === asc.batimentId) : null;
+                    const date = new Date(panne.dateConstat);
+                    const heures = Math.floor((new Date() - date) / 3600000);
+
+                    html += `<div style="background:#f8d7da;color:#721c24;padding:15px;border-radius:10px;margin-bottom:10px;">
+                        <strong>🚨 ${panne.id}</strong> - ${bat ? bat.site : 'N/A'} - ${asc ? asc.marque : 'N/A'}<br>
+                        <small>${panne.type} | Déclarée il y a ${heures}h | ${panne.constatePar}</small>
+                    </div>`;
+                });
+                alertesContainer.innerHTML = html;
+            }
+        }
+
+        function mettreAJourSelectsPanne() {
+            const selectAsc = document.getElementById('panneAscenseur');
+            selectAsc.innerHTML = '<option value="">-- Choisir un ascenseur --</option>';
+
+            data.ascenseurs.forEach(asc => {
+                const bat = data.batiments.find(b => b.id === asc.batimentId);
+                const statutInfo = STATUTS[asc.statut] || STATUTS['AUTRE'];
+                selectAsc.innerHTML += `<option value="${asc.id}">${asc.id} - ${asc.marque} (${bat ? bat.site + ' - ' + bat.batiment : 'N/A'}) [${statutInfo.label}]</option>`;
+            });
+
+            const selectRep = document.getElementById('reparationPanne');
+            selectRep.innerHTML = '<option value="">-- Choisir une panne ouverte --</option>';
+
+            data.pannes.filter(p => p.statut === 'Ouverte').forEach(panne => {
+                const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+                selectRep.innerHTML += `<option value="${panne.id}">${panne.id} - ${panne.type} - ${asc ? asc.marque : 'N/A'}</option>`;
+            });
+
+            afficherPannes();
+        }
+
+        function mettreAJourSelectPV() {
+            const select = document.getElementById('pvPanneSelect');
+            select.innerHTML = '<option value="">-- Choisir une panne --</option>';
+
+            const pannesTriees = [...data.pannes].sort((a,b) =>
+                new Date(b.dateConstat) - new Date(a.dateConstat)
+            );
+
+            pannesTriees.forEach(panne => {
+                const asc = data.ascenseurs.find(a => a.id === panne.ascenseurId);
+                const label = panne.statut === 'Clôturée' ? ' [CLÔTURÉE]' : ' [EN COURS]';
+                select.innerHTML += `<option value="${panne.id}">${panne.id} - ${panne.type}${label}</option>`;
+            });
+        }
+
+        // L'initialisation est maintenant appelée après le déverrouillage
+        // window.onload = init; // Supprimé - appelé dans verifierMotDePasse()
+    </script>
+</body>
+</html>
